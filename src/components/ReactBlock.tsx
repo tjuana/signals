@@ -1,32 +1,20 @@
-import { useRef, useEffect } from 'react'
-import { createSignal, effect } from '@/core/createSignal'
+import { useState } from "react"
+import { Card } from "./ui/Card"
+import { RenderCount } from "./ui/RenderCount"
+import { Title } from './ui/Title'
+import { Button } from './ui/Button'
 
-const [count, setCount] = createSignal(0)
-
-export const SignalBlock = () => {
-  const valueRef = useRef<HTMLParagraphElement>(null)
-  const renders = useRef(0)
-  renders.current += 1
-
-  useEffect(() => {
-    effect(() => {
-      if (valueRef.current) {
-        valueRef.current.textContent = String(count())
-      }
-    })
-  }, [])
+export const ReactBlock = () => {
+  const [count, setCount] = useState(0)
 
   return (
-    <div className="flex flex-col items-center text-center space-y-4">
-      <h2 className="text-2xl font-bold text-blue-400">🧠 Signal State</h2>
-      <p ref={valueRef} className="text-5xl font-mono">0</p>
-      <button
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white"
-        onClick={() => setCount(prev => prev + 1)}
-      >
+    <Card variant="accent" size="md" className="bg-gray-800 p-6 rounded-xl flex flex-col items-center text-center space-y-4 shadow-md">
+      <Title as="h2">⚛ React useState</Title>
+      <p className="text-5xl font-mono">{count}</p>
+      <Button size="md" variant="primary" onClick={() => setCount(prev => prev + 1)}>
         Increment
-      </button>
-      <p className="text-sm text-gray-400">Renders: {renders.current}</p>
-    </div>
+      </Button>
+    <RenderCount />
+  </Card>
   )
 }

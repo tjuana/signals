@@ -1,5 +1,5 @@
-import { SignalBlock } from "./ReactBlock"
-import { ReactBlock } from "./SignalBlock"
+import { SignalBlock } from "./SignalBlock"
+import { ReactBlock } from "./ReactBlock"
 
 export const ShowcaseCounter = () => {
 
