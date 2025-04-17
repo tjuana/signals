@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { createSignalObject } from '@/core/createSignalObject'
-import { useReactiveDOM } from '@/core/useReactiveDOM'
+import { createSignalObject } from '@/core/signal/createSignalObject'
+import { useReactiveDOM } from '@/core/hooks/useReactiveDOM'
 import { RenderCount } from './ui/RenderCount'
 import { Button } from './ui/Button'
 import { Title } from './ui/Title'

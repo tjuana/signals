@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { createSignal, effect } from './createSignal'
+import { createSignal, effect } from '../signal/createSignal'
 
 /**
  * A bridge between fine-grained signal reactivity and React state.

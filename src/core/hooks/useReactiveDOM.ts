@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { effect } from './createSignal'
+import { effect } from '../signal/createSignal'
 
 export function useReactiveDOM<T>(
   ref: React.RefObject<HTMLElement | null>,
