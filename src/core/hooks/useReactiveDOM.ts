@@ -1,14 +1,19 @@
 import { useEffect } from 'react'
 import { effect } from '../signal/createSignal'
 
-export function useReactiveDOM<T>(
-  ref: React.RefObject<HTMLElement | null>,
-  signal: { value: T }
-) {
+export const useReactiveDOM = <T extends HTMLElement>(
+  ref: React.RefObject<T>,
+  signal: { value: any }
+) => {
   useEffect(() => {
     return effect(() => {
       if (ref.current) {
-        ref.current.textContent = String(signal.value)
+        // автоматическая реакция в зависимости от элемента
+        if ('value' in ref.current) {
+          (ref.current as any).value = signal.value
+        } else {
+          ref.current.textContent = String(signal.value ?? '')
+        }
       }
     })
   }, [ref])
