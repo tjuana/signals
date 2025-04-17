@@ -1,10 +1,17 @@
 import { defineSlice } from '@/core/store/defineSlice'
 
-export const form = defineSlice({
-  initial: {
-    name: '',
-    email: ''
-  },
+interface FormState {
+  name: string,
+  email: string
+}
+
+const initial = {
+  name: '',
+  email: ''
+}
+
+export const form = defineSlice<FormState>({
+  initial,
   reducers: {
     setName: (state, value: string) => {
       state.name = value
@@ -14,7 +21,6 @@ export const form = defineSlice({
     }
   },
   selectors: {
-    // TODO fix type
-    isValid: (state: any) => state.name.length > 0 && state.email.includes('@')
+    isValid: (state) => state.name.length > 0 && state.email.includes('@')
   }
 })

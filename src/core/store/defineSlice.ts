@@ -1,36 +1,26 @@
 import { createSignalObject } from '../signal/createSignalObject'
 
-type Reducer<S> = (state: S, ...args: any[]) => void
-type Reducers<S> = Record<string, Reducer<S>>
-type Selectors<S> = Record<string, (state: S) => any>
+export type StateType = Record<string, any>
 
-export function defineSlice<
-  S extends object,
-  R extends Reducers<S>,
-  L extends Selectors<S> = {}
->({
-  // name,
-  initial,
-  reducers,
-  selectors,
-  // persist
-}: {
-  // name: string
+export type Reducer<S extends StateType> = (state: S, ...args: any[]) => void
+export type Reducers<S extends StateType> = Record<string, Reducer<S>>
+export type Selectors<S extends StateType> = Record<string, (state: S) => any>
+
+export const defineSlice = <S extends StateType>(config: {
   initial: S
-  reducers: R
-  selectors?: L
-  // persist?: boolean
-}) {
-  // 1. Create state as reactive signal objects
+  reducers: Reducers<S>
+  selectors?: Selectors<S>
+}) => {
+  const { initial, reducers, selectors } = config
+
   const state = {} as { [K in keyof S]: ReturnType<typeof createSignalObject<S[K]>> }
 
   for (const key in initial) {
     state[key] = createSignalObject(initial[key])
   }
 
-  // 2. Wrap reducers to mutate signal objects
   const actions = {} as {
-    [K in keyof R]: (...args: Parameters<R[K]>) => void
+    [K in keyof typeof reducers]: (...args: Parameters<typeof reducers[K]>) => void
   }
 
   for (const key in reducers) {
@@ -51,27 +41,25 @@ export function defineSlice<
     }
   }
 
-  // 3. Generate selectors
   const computed = {} as {
-    [K in keyof L]: ReturnType<typeof createSignalObject<ReturnType<L[K]>>>
-  }
+    [K in keyof typeof selectors]: ReturnType<typeof createSignalObject<ReturnType<typeof selectors[K]>>> 
+  } & { [key: string]: any }
 
   if (selectors) {
-    for (const key in selectors) {
-      const compute = () => selectors[key](getSnapshot())
+    const getSnapshot = (): S => {
+      const snapshot = {} as S
+      for (const key in state) {
+        snapshot[key] = state[key].value
+      }
+      return snapshot
+    }
+
+    for (const [key, fn] of Object.entries(selectors)) {
+      const compute = () => fn(getSnapshot())
       computed[key] = createSignalObject(compute())
     }
   }
 
-  function getSnapshot(): S {
-    const snapshot = {} as S
-    for (const key in state) {
-      snapshot[key] = state[key].value
-    }
-    return snapshot
-  }
-
-  // 4. Return everything flat
   return {
     ...state,
     ...actions,
