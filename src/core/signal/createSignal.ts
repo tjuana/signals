@@ -1,4 +1,5 @@
-import { logSignal } from "../dev/logger/logger"
+import { emit } from '../dev/logger/eventBus'
+import { getCurrentSource } from '../dev/logger/context'
 
 type Effect = () => void
 
@@ -11,32 +12,37 @@ export function createSignal<T>(
 ): [() => T, (v: T | ((prev: T) => T)) => void, (fn: () => void) => () => void] {
   let value = initial
   const subscribers = new Set<Effect>()
-  const debugLabel = label ?? `signal-${signalId++}`
+  const signal = label ?? `signal-${signalId++}`
+  const source = getCurrentSource()
 
-  logSignal(debugLabel, 'init', value)
+  emit('signal:init', { signal, value, source })
 
   const get = () => {
-    logSignal(debugLabel, 'get', value)
+    emit('signal:get', { signal, value, source })
     if (currentEffect) {
       subscribers.add(currentEffect)
-      logSignal(debugLabel, 'sub', currentEffect.name || 'anonymous effect')
+      emit('signal:sub', {
+        signal,
+        effect: currentEffect.name || 'anonymous',
+        source
+      })
     }
     return value
   }
 
   const set = (next: T | ((prev: T) => T)) => {
-    const old = value
+    const from = value
     value = typeof next === 'function' ? (next as (prev: T) => T)(value) : next
-    logSignal(debugLabel, 'set', { from: old, to: value })
-    subscribers.forEach(fn => fn())
+    emit('signal:set', { signal, from, to: value, source })
+    for (const fn of subscribers) fn()
   }
 
   const subscribe = (fn: () => void) => {
     subscribers.add(fn)
-    logSignal(debugLabel, 'sub', fn.name || 'anonymous')
+    emit('signal:sub', { signal, effect: fn.name || 'anonymous', source })
     return () => {
       subscribers.delete(fn)
-      logSignal(debugLabel, 'unsub', fn.name || 'anonymous')
+      emit('signal:unsub', { signal, effect: fn.name || 'anonymous', source })
     }
   }
 

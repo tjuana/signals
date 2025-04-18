@@ -62,5 +62,5 @@ export const createForm = <TFields extends Record<string, FieldConfig<any>>>(con
       ...fields,
       isValid
     }
-  })
+  }, 'yo')
 }
