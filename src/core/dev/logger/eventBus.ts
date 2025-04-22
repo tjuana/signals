@@ -1,4 +1,4 @@
-// core/devtools/eventBus.ts
+import { recordSignalLog } from "./logTree"
 
 export type EventPayload = {
   context?: string | null
@@ -73,6 +73,10 @@ export const emitInfo = (context: string, message: string, extra?: Record<string
 
 if (import.meta.env.DEV) {
   on('*', (type, payload) => {
+    if (type.startsWith('signal:')) {
+      recordSignalLog(type, payload)
+    }
+
     console.debug(
       `%c[${type}]`,
       'color: #888; font-weight: bold',
