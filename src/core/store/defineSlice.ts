@@ -1,68 +1,60 @@
 import { createSignalObject } from '../signal/createSignalObject'
+import { createModule } from '../module/createModule'
+import { computed } from '../signal/computed'
 
-export type StateType = Record<string, any>
-
-export type Reducer<S extends StateType> = (state: S, ...args: any[]) => void
-export type Reducers<S extends StateType> = Record<string, Reducer<S>>
-export type Selectors<S extends StateType> = Record<string, (state: S) => any>
-
-export const defineSlice = <S extends StateType>(config: {
-  initial: S
-  reducers: Reducers<S>
-  selectors?: Selectors<S>
+export const defineSlice = <S extends Record<string, any>>(config: {
+  state: S
+  actions: Record<string, (state: S, ...args: any[]) => void>
+  selectors?: Record<string, (state: S) => any>
 }) => {
-  const { initial, reducers, selectors } = config
+  const output = Object.fromEntries(
+    Object.entries(config.state).map(([key, value]) => [key, createSignalObject(value)])
+  ) as { [K in keyof S]: ReturnType<typeof createSignalObject<S[K]>> }
 
-  const state = {} as { [K in keyof S]: ReturnType<typeof createSignalObject<S[K]>> }
+  const input = Object.fromEntries(
+    Object.keys(config.actions).map(key => [key, createSignalObject<any[]>([])])
+  )
 
-  for (const key in initial) {
-    state[key] = createSignalObject(initial[key])
+  const getSnapshot = (): S => {
+    const snapshot = {} as S
+    for (const key in output) {
+      snapshot[key] = output[key].value
+    }
+    return snapshot
   }
 
-  const actions = {} as {
-    [K in keyof typeof reducers]: (...args: Parameters<typeof reducers[K]>) => void
-  }
+  const selectors = Object.fromEntries(
+    Object.entries(config.selectors ?? {}).map(([key, selectorFn]) => [
+      key,
+      computed(() => selectorFn(getSnapshot()))
+    ])
+  ) as Record<string, ReturnType<typeof computed>>
 
-  for (const key in reducers) {
-    actions[key] = (...args: any[]) => {
-      const proxy = new Proxy(
-        {},
-        {
+  const setup = () => {
+    for (const key in config.actions) {
+      input[key].subscribe(() => {
+        const args = input[key].value
+        const proxy = new Proxy({}, {
           get(_, prop) {
-            return state[prop as keyof S].value
+            return output[prop as keyof S].value
           },
           set(_, prop, value) {
-            state[prop as keyof S].set(value)
+            output[prop as keyof S].set(value)
             return true
           }
-        }
-      )
-      reducers[key](proxy as S, ...args)
+        })
+      
+        config.actions[key](proxy as S, ...args)
+      })
     }
   }
 
-  const computed = {} as {
-    [K in keyof typeof selectors]: ReturnType<typeof createSignalObject<ReturnType<typeof selectors[K]>>> 
-  } & { [key: string]: any }
-
-  if (selectors) {
-    const getSnapshot = (): S => {
-      const snapshot = {} as S
-      for (const key in state) {
-        snapshot[key] = state[key].value
-      }
-      return snapshot
-    }
-
-    for (const [key, fn] of Object.entries(selectors)) {
-      const compute = () => fn(getSnapshot())
-      computed[key] = createSignalObject(compute())
-    }
-  }
-
-  return {
-    ...state,
-    ...actions,
-    ...computed
-  }
+  return createModule({
+    input,
+    output: {
+      ...output,
+      ...selectors
+    },
+    setup
+  })
 }
