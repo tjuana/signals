@@ -58,3 +58,5 @@ export function printDevLogTree() {
 if (import.meta.env.DEV) {
   ;(window as any).printDevLogTree = printDevLogTree
 }
+
+export { devLogTree }
